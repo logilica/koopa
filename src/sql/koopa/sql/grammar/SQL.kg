@@ -67,8 +67,12 @@ def selectStatement =
     [setQuantifier]
     selectList
     [into]
-    from              [ unknown: --> WHERE ]
-    [`where]          [ unknown: --> eof ]
+    from              [ unknown: --> nextBlockOrEnd ]
+    [`where]          [ unknown: --> nextAfterWhere ]
+    [groupBy]         [ unknown: --> nextAfterGroupBy ]
+    [having]          [ unknown: --> nextAfterHaving ]
+    [orderBy]         [ unknown: --> nextAfterOrderBy ]
+    [fetchFirst]      [ unknown: --> eof ]
 
   where def setQuantifier =  ( distinct: DISTINCT | all: ALL )  end
   
@@ -102,9 +106,42 @@ def selectStatement =
       ) %upto { nextBlockOrEnd }
   end
 
+  where def groupBy =
+      GROUP BY (unknown: --> nextAfterGroupBy)
+  end
+
+  where def having =
+      HAVING (unknown: --> nextAfterHaving)
+  end
+
+  where def orderBy =
+      ORDER BY (unknown: --> nextAfterOrderBy)
+  end
+
+  where def fetchFirst =
+      FETCH FIRST (unknown: --> (ROW | ROWS | eof))
+      (ROW | ROWS) ONLY
+  end
+
   where private def nextBlockOrEnd =
-      ( FROM | WHERE | GROUP BY | HAVING | WINDOW | eof )
+      ( FROM | WHERE | GROUP BY | HAVING | ORDER BY | FETCH FIRST | WINDOW | eof )
   end 
+
+  where private def nextAfterWhere =
+      ( GROUP BY | HAVING | ORDER BY | FETCH FIRST | eof )
+  end
+
+  where private def nextAfterGroupBy =
+      ( HAVING | ORDER BY | FETCH FIRST | eof )
+  end
+
+  where private def nextAfterHaving =
+      ( ORDER BY | FETCH FIRST | eof )
+  end
+
+  where private def nextAfterOrderBy =
+      ( FETCH FIRST | eof )
+  end
 end
 
 def insertStatement =

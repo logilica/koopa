@@ -419,12 +419,52 @@ public class SQLGrammar extends SQLBaseGrammar {
             optional(
               as("unknown",
                 skipto(
-                  keyword("WHERE")
+                  selectStatement$nextBlockOrEnd()
                 )
               )
             ),
             optional(
               selectStatement$where()
+            ),
+            optional(
+              as("unknown",
+                skipto(
+                  selectStatement$nextAfterWhere()
+                )
+              )
+            ),
+            optional(
+              selectStatement$groupBy()
+            ),
+            optional(
+              as("unknown",
+                skipto(
+                  selectStatement$nextAfterGroupBy()
+                )
+              )
+            ),
+            optional(
+              selectStatement$having()
+            ),
+            optional(
+              as("unknown",
+                skipto(
+                  selectStatement$nextAfterHaving()
+                )
+              )
+            ),
+            optional(
+              selectStatement$orderBy()
+            ),
+            optional(
+              as("unknown",
+                skipto(
+                  selectStatement$nextAfterOrderBy()
+                )
+              )
+            ),
+            optional(
+              selectStatement$fetchFirst()
             ),
             optional(
               as("unknown",
@@ -664,6 +704,126 @@ public class SQLGrammar extends SQLBaseGrammar {
     }
     
     // ========================================================
+    // groupBy
+    // ........................................................
+    
+    private ParserCombinator selectStatement$groupByParser = null;
+    
+    public final Start selectStatement$groupBy = Start.on(getNamespace(), "groupBy");
+    
+    public ParserCombinator selectStatement$groupBy() {
+      if (selectStatement$groupByParser == null) {
+        FutureParser future = scoped("groupBy", PUBLIC, true);
+        selectStatement$groupByParser = future;
+        future.setParser(
+          sequence(
+            keyword("GROUP"),
+            keyword("BY"),
+            as("unknown",
+              skipto(
+                selectStatement$nextAfterGroupBy()
+              )
+            )
+          )
+        );
+      }
+    
+      return selectStatement$groupByParser;
+    }
+    
+    // ========================================================
+    // having
+    // ........................................................
+    
+    private ParserCombinator selectStatement$havingParser = null;
+    
+    public final Start selectStatement$having = Start.on(getNamespace(), "having");
+    
+    public ParserCombinator selectStatement$having() {
+      if (selectStatement$havingParser == null) {
+        FutureParser future = scoped("having", PUBLIC, true);
+        selectStatement$havingParser = future;
+        future.setParser(
+          sequence(
+            keyword("HAVING"),
+            as("unknown",
+              skipto(
+                selectStatement$nextAfterHaving()
+              )
+            )
+          )
+        );
+      }
+    
+      return selectStatement$havingParser;
+    }
+    
+    // ========================================================
+    // orderBy
+    // ........................................................
+    
+    private ParserCombinator selectStatement$orderByParser = null;
+    
+    public final Start selectStatement$orderBy = Start.on(getNamespace(), "orderBy");
+    
+    public ParserCombinator selectStatement$orderBy() {
+      if (selectStatement$orderByParser == null) {
+        FutureParser future = scoped("orderBy", PUBLIC, true);
+        selectStatement$orderByParser = future;
+        future.setParser(
+          sequence(
+            keyword("ORDER"),
+            keyword("BY"),
+            as("unknown",
+              skipto(
+                selectStatement$nextAfterOrderBy()
+              )
+            )
+          )
+        );
+      }
+    
+      return selectStatement$orderByParser;
+    }
+    
+    // ========================================================
+    // fetchFirst
+    // ........................................................
+    
+    private ParserCombinator selectStatement$fetchFirstParser = null;
+    
+    public final Start selectStatement$fetchFirst = Start.on(getNamespace(), "fetchFirst");
+    
+    public ParserCombinator selectStatement$fetchFirst() {
+      if (selectStatement$fetchFirstParser == null) {
+        FutureParser future = scoped("fetchFirst", PUBLIC, true);
+        selectStatement$fetchFirstParser = future;
+        future.setParser(
+          sequence(
+            keyword("FETCH"),
+            keyword("FIRST"),
+            as("unknown",
+              skipto(
+                choice(
+                  keyword("ROW"),
+                  keyword("ROWS"),
+                  eof()
+                )
+              )
+            ),
+            choice(
+              keyword("ROW"),
+              keyword("ROWS")
+            ),
+            keyword("ONLY")
+          )
+        );
+      }
+    
+      return selectStatement$fetchFirstParser;
+    }
+    
+    // ========================================================
     // nextBlockOrEnd
     // ........................................................
     
@@ -684,6 +844,14 @@ public class SQLGrammar extends SQLBaseGrammar {
               keyword("BY")
             ),
             keyword("HAVING"),
+            sequence(
+              keyword("ORDER"),
+              keyword("BY")
+            ),
+            sequence(
+              keyword("FETCH"),
+              keyword("FIRST")
+            ),
             keyword("WINDOW"),
             eof()
           )
@@ -691,6 +859,128 @@ public class SQLGrammar extends SQLBaseGrammar {
       }
     
       return selectStatement$nextBlockOrEndParser;
+    }
+    
+    // ========================================================
+    // nextAfterWhere
+    // ........................................................
+    
+    private ParserCombinator selectStatement$nextAfterWhereParser = null;
+    
+    protected final Start selectStatement$nextAfterWhere = Start.on(getNamespace(), "nextAfterWhere");
+    
+    protected ParserCombinator selectStatement$nextAfterWhere() {
+      if (selectStatement$nextAfterWhereParser == null) {
+        FutureParser future = scoped("nextAfterWhere", PRIVATE, true);
+        selectStatement$nextAfterWhereParser = future;
+        future.setParser(
+          choice(
+            sequence(
+              keyword("GROUP"),
+              keyword("BY")
+            ),
+            keyword("HAVING"),
+            sequence(
+              keyword("ORDER"),
+              keyword("BY")
+            ),
+            sequence(
+              keyword("FETCH"),
+              keyword("FIRST")
+            ),
+            eof()
+          )
+        );
+      }
+    
+      return selectStatement$nextAfterWhereParser;
+    }
+    
+    // ========================================================
+    // nextAfterGroupBy
+    // ........................................................
+    
+    private ParserCombinator selectStatement$nextAfterGroupByParser = null;
+    
+    protected final Start selectStatement$nextAfterGroupBy = Start.on(getNamespace(), "nextAfterGroupBy");
+    
+    protected ParserCombinator selectStatement$nextAfterGroupBy() {
+      if (selectStatement$nextAfterGroupByParser == null) {
+        FutureParser future = scoped("nextAfterGroupBy", PRIVATE, true);
+        selectStatement$nextAfterGroupByParser = future;
+        future.setParser(
+          choice(
+            keyword("HAVING"),
+            sequence(
+              keyword("ORDER"),
+              keyword("BY")
+            ),
+            sequence(
+              keyword("FETCH"),
+              keyword("FIRST")
+            ),
+            eof()
+          )
+        );
+      }
+    
+      return selectStatement$nextAfterGroupByParser;
+    }
+    
+    // ========================================================
+    // nextAfterHaving
+    // ........................................................
+    
+    private ParserCombinator selectStatement$nextAfterHavingParser = null;
+    
+    protected final Start selectStatement$nextAfterHaving = Start.on(getNamespace(), "nextAfterHaving");
+    
+    protected ParserCombinator selectStatement$nextAfterHaving() {
+      if (selectStatement$nextAfterHavingParser == null) {
+        FutureParser future = scoped("nextAfterHaving", PRIVATE, true);
+        selectStatement$nextAfterHavingParser = future;
+        future.setParser(
+          choice(
+            sequence(
+              keyword("ORDER"),
+              keyword("BY")
+            ),
+            sequence(
+              keyword("FETCH"),
+              keyword("FIRST")
+            ),
+            eof()
+          )
+        );
+      }
+    
+      return selectStatement$nextAfterHavingParser;
+    }
+    
+    // ========================================================
+    // nextAfterOrderBy
+    // ........................................................
+    
+    private ParserCombinator selectStatement$nextAfterOrderByParser = null;
+    
+    protected final Start selectStatement$nextAfterOrderBy = Start.on(getNamespace(), "nextAfterOrderBy");
+    
+    protected ParserCombinator selectStatement$nextAfterOrderBy() {
+      if (selectStatement$nextAfterOrderByParser == null) {
+        FutureParser future = scoped("nextAfterOrderBy", PRIVATE, true);
+        selectStatement$nextAfterOrderByParser = future;
+        future.setParser(
+          choice(
+            sequence(
+              keyword("FETCH"),
+              keyword("FIRST")
+            ),
+            eof()
+          )
+        );
+      }
+    
+      return selectStatement$nextAfterOrderByParser;
     }
     
     // ========================================================
