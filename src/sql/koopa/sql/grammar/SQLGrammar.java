@@ -53,10 +53,18 @@ public class SQLGrammar extends SQLBaseGrammar {
             insertStatement(),
             updateStatement(),
             deleteStatement(),
+            fetchStatement(),
             openStatement(),
             closeStatement(),
+            commitStatement(),
             rollbackStatement(),
             lockTableStatement(),
+            setStatement(),
+            getDiagnosticsStatement(),
+            prepareStatement(),
+            executeImmediateStatement(),
+            executeStatement(),
+            describeStatement(),
             alterStatement(),
             createStatement(),
             dropStatement(),
@@ -1275,6 +1283,461 @@ public class SQLGrammar extends SQLBaseGrammar {
       }
     
       return lockTableStatementParser;
+    }
+    
+    // ========================================================
+    // fetchStatement
+    // ........................................................
+    
+    private ParserCombinator fetchStatementParser = null;
+    
+    public final Start fetchStatement = Start.on(getNamespace(), "fetchStatement");
+    
+    public ParserCombinator fetchStatement() {
+      if (fetchStatementParser == null) {
+        FutureParser future = scoped("fetchStatement", PUBLIC, true);
+        fetchStatementParser = future;
+        future.setParser(
+          sequence(
+            keyword("FETCH"),
+            optional(
+              fetchStatement$fetchOrientation()
+            ),
+            cursorName(),
+            optional(
+              fetchStatement$fetchInto()
+            ),
+            optional(
+              fetchStatement$fetchUsingDescriptor()
+            ),
+            optional(
+              as("unknown",
+                skipto(
+                  eof()
+                )
+              )
+            )
+          )
+        );
+      }
+    
+      return fetchStatementParser;
+    }
+    
+    // ========================================================
+    // fetchOrientation
+    // ........................................................
+    
+    private ParserCombinator fetchStatement$fetchOrientationParser = null;
+    
+    public final Start fetchStatement$fetchOrientation = Start.on(getNamespace(), "fetchOrientation");
+    
+    public ParserCombinator fetchStatement$fetchOrientation() {
+      if (fetchStatement$fetchOrientationParser == null) {
+        FutureParser future = scoped("fetchOrientation", PUBLIC, true);
+        fetchStatement$fetchOrientationParser = future;
+        future.setParser(
+          choice(
+            keyword("NEXT"),
+            keyword("PRIOR"),
+            keyword("FIRST"),
+            keyword("LAST"),
+            keyword("BEFORE"),
+            keyword("AFTER"),
+            keyword("CURRENT")
+          )
+        );
+      }
+    
+      return fetchStatement$fetchOrientationParser;
+    }
+    
+    // ========================================================
+    // fetchInto
+    // ........................................................
+    
+    private ParserCombinator fetchStatement$fetchIntoParser = null;
+    
+    public final Start fetchStatement$fetchInto = Start.on(getNamespace(), "fetchInto");
+    
+    public ParserCombinator fetchStatement$fetchInto() {
+      if (fetchStatement$fetchIntoParser == null) {
+        FutureParser future = scoped("fetchInto", PUBLIC, true);
+        fetchStatement$fetchIntoParser = future;
+        future.setParser(
+          sequence(
+            keyword("INTO"),
+            sequence(
+              fetchStatement$fetchInto$target(),
+              star(
+                sequence(
+                  literal(","),
+                  fetchStatement$fetchInto$target()
+                )
+              )
+            )
+          )
+        );
+      }
+    
+      return fetchStatement$fetchIntoParser;
+    }
+    
+    // ========================================================
+    // target
+    // ........................................................
+    
+    private ParserCombinator fetchStatement$fetchInto$targetParser = null;
+    
+    protected final Start fetchStatement$fetchInto$target = Start.on(getNamespace(), "target");
+    
+    protected ParserCombinator fetchStatement$fetchInto$target() {
+      if (fetchStatement$fetchInto$targetParser == null) {
+        FutureParser future = scoped("target", PRIVATE, true);
+        fetchStatement$fetchInto$targetParser = future;
+        future.setParser(
+          upto(
+            choice(
+              hostParameterSpecification(),
+              as("unknown",
+                plus(
+                  any()
+                )
+              )
+            ),
+            // Closure:
+            literal(",")
+          )
+        );
+      }
+    
+      return fetchStatement$fetchInto$targetParser;
+    }
+    
+    // ========================================================
+    // fetchUsingDescriptor
+    // ........................................................
+    
+    private ParserCombinator fetchStatement$fetchUsingDescriptorParser = null;
+    
+    public final Start fetchStatement$fetchUsingDescriptor = Start.on(getNamespace(), "fetchUsingDescriptor");
+    
+    public ParserCombinator fetchStatement$fetchUsingDescriptor() {
+      if (fetchStatement$fetchUsingDescriptorParser == null) {
+        FutureParser future = scoped("fetchUsingDescriptor", PUBLIC, true);
+        fetchStatement$fetchUsingDescriptorParser = future;
+        future.setParser(
+          sequence(
+            keyword("USING"),
+            keyword("DESCRIPTOR"),
+            as("unknown",
+              skipto(
+                eof()
+              )
+            )
+          )
+        );
+      }
+    
+      return fetchStatement$fetchUsingDescriptorParser;
+    }
+    
+    // ========================================================
+    // commitStatement
+    // ........................................................
+    
+    private ParserCombinator commitStatementParser = null;
+    
+    public final Start commitStatement = Start.on(getNamespace(), "commitStatement");
+    
+    public ParserCombinator commitStatement() {
+      if (commitStatementParser == null) {
+        FutureParser future = scoped("commitStatement", PUBLIC, true);
+        commitStatementParser = future;
+        future.setParser(
+          sequence(
+            keyword("COMMIT"),
+            optional(
+              keyword("WORK")
+            )
+          )
+        );
+      }
+    
+      return commitStatementParser;
+    }
+    
+    // ========================================================
+    // setStatement
+    // ........................................................
+    
+    private ParserCombinator setStatementParser = null;
+    
+    public final Start setStatement = Start.on(getNamespace(), "setStatement");
+    
+    public ParserCombinator setStatement() {
+      if (setStatementParser == null) {
+        FutureParser future = scoped("setStatement", PUBLIC, true);
+        setStatementParser = future;
+        future.setParser(
+          sequence(
+            keyword("SET"),
+            optional(
+              as("unknown",
+                skipto(
+                  eof()
+                )
+              )
+            )
+          )
+        );
+      }
+    
+      return setStatementParser;
+    }
+    
+    // ========================================================
+    // getDiagnosticsStatement
+    // ........................................................
+    
+    private ParserCombinator getDiagnosticsStatementParser = null;
+    
+    public final Start getDiagnosticsStatement = Start.on(getNamespace(), "getDiagnosticsStatement");
+    
+    public ParserCombinator getDiagnosticsStatement() {
+      if (getDiagnosticsStatementParser == null) {
+        FutureParser future = scoped("getDiagnosticsStatement", PUBLIC, true);
+        getDiagnosticsStatementParser = future;
+        future.setParser(
+          sequence(
+            keyword("GET"),
+            keyword("DIAGNOSTICS"),
+            optional(
+              as("unknown",
+                skipto(
+                  eof()
+                )
+              )
+            )
+          )
+        );
+      }
+    
+      return getDiagnosticsStatementParser;
+    }
+    
+    // ========================================================
+    // prepareStatement
+    // ........................................................
+    
+    private ParserCombinator prepareStatementParser = null;
+    
+    public final Start prepareStatement = Start.on(getNamespace(), "prepareStatement");
+    
+    public ParserCombinator prepareStatement() {
+      if (prepareStatementParser == null) {
+        FutureParser future = scoped("prepareStatement", PUBLIC, true);
+        prepareStatementParser = future;
+        future.setParser(
+          sequence(
+            keyword("PREPARE"),
+            identifier(),
+            optional(
+              prepareStatement$prepareInto()
+            ),
+            keyword("FROM"),
+            as("unknown",
+              skipto(
+                eof()
+              )
+            ),
+            optional(
+              as("unknown",
+                skipto(
+                  eof()
+                )
+              )
+            )
+          )
+        );
+      }
+    
+      return prepareStatementParser;
+    }
+    
+    // ========================================================
+    // prepareInto
+    // ........................................................
+    
+    private ParserCombinator prepareStatement$prepareIntoParser = null;
+    
+    public final Start prepareStatement$prepareInto = Start.on(getNamespace(), "prepareInto");
+    
+    public ParserCombinator prepareStatement$prepareInto() {
+      if (prepareStatement$prepareIntoParser == null) {
+        FutureParser future = scoped("prepareInto", PUBLIC, true);
+        prepareStatement$prepareIntoParser = future;
+        future.setParser(
+          sequence(
+            keyword("INTO"),
+            as("unknown",
+              skipto(
+                keyword("FROM")
+              )
+            )
+          )
+        );
+      }
+    
+      return prepareStatement$prepareIntoParser;
+    }
+    
+    // ========================================================
+    // executeImmediateStatement
+    // ........................................................
+    
+    private ParserCombinator executeImmediateStatementParser = null;
+    
+    public final Start executeImmediateStatement = Start.on(getNamespace(), "executeImmediateStatement");
+    
+    public ParserCombinator executeImmediateStatement() {
+      if (executeImmediateStatementParser == null) {
+        FutureParser future = scoped("executeImmediateStatement", PUBLIC, true);
+        executeImmediateStatementParser = future;
+        future.setParser(
+          sequence(
+            keyword("EXECUTE"),
+            keyword("IMMEDIATE"),
+            as("unknown",
+              skipto(
+                eof()
+              )
+            )
+          )
+        );
+      }
+    
+      return executeImmediateStatementParser;
+    }
+    
+    // ========================================================
+    // executeStatement
+    // ........................................................
+    
+    private ParserCombinator executeStatementParser = null;
+    
+    public final Start executeStatement = Start.on(getNamespace(), "executeStatement");
+    
+    public ParserCombinator executeStatement() {
+      if (executeStatementParser == null) {
+        FutureParser future = scoped("executeStatement", PUBLIC, true);
+        executeStatementParser = future;
+        future.setParser(
+          sequence(
+            keyword("EXECUTE"),
+            identifier(),
+            optional(
+              executeStatement$executeUsing()
+            ),
+            optional(
+              as("unknown",
+                skipto(
+                  eof()
+                )
+              )
+            )
+          )
+        );
+      }
+    
+      return executeStatementParser;
+    }
+    
+    // ========================================================
+    // executeUsing
+    // ........................................................
+    
+    private ParserCombinator executeStatement$executeUsingParser = null;
+    
+    public final Start executeStatement$executeUsing = Start.on(getNamespace(), "executeUsing");
+    
+    public ParserCombinator executeStatement$executeUsing() {
+      if (executeStatement$executeUsingParser == null) {
+        FutureParser future = scoped("executeUsing", PUBLIC, true);
+        executeStatement$executeUsingParser = future;
+        future.setParser(
+          sequence(
+            keyword("USING"),
+            as("unknown",
+              skipto(
+                eof()
+              )
+            )
+          )
+        );
+      }
+    
+      return executeStatement$executeUsingParser;
+    }
+    
+    // ========================================================
+    // describeStatement
+    // ........................................................
+    
+    private ParserCombinator describeStatementParser = null;
+    
+    public final Start describeStatement = Start.on(getNamespace(), "describeStatement");
+    
+    public ParserCombinator describeStatement() {
+      if (describeStatementParser == null) {
+        FutureParser future = scoped("describeStatement", PUBLIC, true);
+        describeStatementParser = future;
+        future.setParser(
+          sequence(
+            keyword("DESCRIBE"),
+            identifier(),
+            optional(
+              describeStatement$describeInto()
+            ),
+            optional(
+              as("unknown",
+                skipto(
+                  eof()
+                )
+              )
+            )
+          )
+        );
+      }
+    
+      return describeStatementParser;
+    }
+    
+    // ========================================================
+    // describeInto
+    // ........................................................
+    
+    private ParserCombinator describeStatement$describeIntoParser = null;
+    
+    public final Start describeStatement$describeInto = Start.on(getNamespace(), "describeInto");
+    
+    public ParserCombinator describeStatement$describeInto() {
+      if (describeStatement$describeIntoParser == null) {
+        FutureParser future = scoped("describeInto", PUBLIC, true);
+        describeStatement$describeIntoParser = future;
+        future.setParser(
+          sequence(
+            keyword("INTO"),
+            as("unknown",
+              skipto(
+                eof()
+              )
+            )
+          )
+        );
+      }
+    
+      return describeStatement$describeIntoParser;
     }
     
     // ========================================================

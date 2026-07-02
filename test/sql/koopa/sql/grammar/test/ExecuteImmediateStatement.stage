@@ -1,0 +1,4 @@
+target executeImmediateStatement;
+
+# Basic EXECUTE IMMEDIATE
++[ EXECUTE IMMEDIATE ] HostParameter:hostParameterSpecification

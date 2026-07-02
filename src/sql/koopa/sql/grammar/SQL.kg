@@ -19,10 +19,18 @@ def sqlStatement =
     | insertStatement
     | updateStatement
     | deleteStatement
+    | fetchStatement
     | openStatement
     | closeStatement
+    | commitStatement
     | rollbackStatement
     | lockTableStatement
+    | setStatement
+    | getDiagnosticsStatement
+    | prepareStatement
+    | executeImmediateStatement
+    | executeStatement
+    | describeStatement
     
     | alterStatement
     | createStatement
@@ -191,6 +199,87 @@ def lockTableStatement =
 
     [unknown: --> eof]
 end
+
+
+## ############################################################################
+## Additional DML / Transaction Control / Dynamic SQL Statements
+## ----------------------------------------------------------------------------
+
+def fetchStatement =
+    FETCH [fetchOrientation] cursorName
+    [fetchInto]
+    [fetchUsingDescriptor]
+    [unknown: --> eof]
+
+  where def fetchOrientation =
+      ( NEXT | PRIOR | FIRST | LAST
+      | BEFORE | AFTER
+      | CURRENT
+      )
+  end
+
+  where def fetchInto =
+      INTO (target (',' target)*)
+
+    where private def target =
+      ( hostParameterSpecification
+      | unknown: _+
+      ) %upto { ',' }
+    end
+  end
+
+  where def fetchUsingDescriptor =
+      USING DESCRIPTOR (unknown: --> eof)
+  end
+end
+
+def commitStatement =
+    COMMIT [WORK]
+end
+
+def setStatement =
+    SET [unknown: --> eof]
+end
+
+def getDiagnosticsStatement =
+    GET DIAGNOSTICS [unknown: --> eof]
+end
+
+def prepareStatement =
+    PREPARE identifier
+    [prepareInto]
+    FROM (unknown: --> eof)
+    [unknown: --> eof]
+
+  where def prepareInto =
+      INTO (unknown: --> FROM)
+  end
+end
+
+def executeImmediateStatement =
+    EXECUTE IMMEDIATE (unknown: --> eof)
+end
+
+def executeStatement =
+    EXECUTE identifier
+    [executeUsing]
+    [unknown: --> eof]
+
+  where def executeUsing =
+      USING (unknown: --> eof)
+  end
+end
+
+def describeStatement =
+    DESCRIBE identifier
+    [describeInto]
+    [unknown: --> eof]
+
+  where def describeInto =
+      INTO (unknown: --> eof)
+  end
+end
+
 
 ## ############################################################################
 ## Data Definition Language Statements
