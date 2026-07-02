@@ -1951,7 +1951,11 @@ public class SQLGrammar extends SQLBaseGrammar {
         FutureParser future = scoped("aggregateFunction", PUBLIC, true);
         aggregateFunctionParser = future;
         future.setParser(
-          countAll()
+          choice(
+            countAll(),
+            countColumn(),
+            generalAggregate()
+          )
         );
       }
     
@@ -1981,6 +1985,164 @@ public class SQLGrammar extends SQLBaseGrammar {
       }
     
       return countAllParser;
+    }
+    
+    // ========================================================
+    // countColumn
+    // ........................................................
+    
+    private ParserCombinator countColumnParser = null;
+    
+    public final Start countColumn = Start.on(getNamespace(), "countColumn");
+    
+    public ParserCombinator countColumn() {
+      if (countColumnParser == null) {
+        FutureParser future = scoped("countColumn", PUBLIC, true);
+        countColumnParser = future;
+        future.setParser(
+          sequence(
+            keyword("COUNT"),
+            literal("("),
+            optional(
+              countColumn$setQuantifier()
+            ),
+            as("unknown",
+              skipto(
+                literal(")")
+              )
+            ),
+            literal(")")
+          )
+        );
+      }
+    
+      return countColumnParser;
+    }
+    
+    // ========================================================
+    // setQuantifier
+    // ........................................................
+    
+    private ParserCombinator countColumn$setQuantifierParser = null;
+    
+    public final Start countColumn$setQuantifier = Start.on(getNamespace(), "setQuantifier");
+    
+    public ParserCombinator countColumn$setQuantifier() {
+      if (countColumn$setQuantifierParser == null) {
+        FutureParser future = scoped("setQuantifier", PUBLIC, true);
+        countColumn$setQuantifierParser = future;
+        future.setParser(
+          choice(
+            as("distinct",
+              keyword("DISTINCT")
+            ),
+            as("all",
+              keyword("ALL")
+            )
+          )
+        );
+      }
+    
+      return countColumn$setQuantifierParser;
+    }
+    
+    // ========================================================
+    // generalAggregate
+    // ........................................................
+    
+    private ParserCombinator generalAggregateParser = null;
+    
+    public final Start generalAggregate = Start.on(getNamespace(), "generalAggregate");
+    
+    public ParserCombinator generalAggregate() {
+      if (generalAggregateParser == null) {
+        FutureParser future = scoped("generalAggregate", PUBLIC, true);
+        generalAggregateParser = future;
+        future.setParser(
+          sequence(
+            generalAggregate$aggregateName(),
+            literal("("),
+            optional(
+              generalAggregate$setQuantifier()
+            ),
+            as("unknown",
+              skipto(
+                literal(")")
+              )
+            ),
+            literal(")")
+          )
+        );
+      }
+    
+      return generalAggregateParser;
+    }
+    
+    // ========================================================
+    // aggregateName
+    // ........................................................
+    
+    private ParserCombinator generalAggregate$aggregateNameParser = null;
+    
+    public final Start generalAggregate$aggregateName = Start.on(getNamespace(), "aggregateName");
+    
+    public ParserCombinator generalAggregate$aggregateName() {
+      if (generalAggregate$aggregateNameParser == null) {
+        FutureParser future = scoped("aggregateName", PUBLIC, true);
+        generalAggregate$aggregateNameParser = future;
+        future.setParser(
+          choice(
+            keyword("SUM"),
+            keyword("AVG"),
+            keyword("MIN"),
+            keyword("MAX"),
+            keyword("MEDIAN"),
+            keyword("STDDEV"),
+            keyword("VARIANCE"),
+            keyword("VAR"),
+            keyword("CORR"),
+            keyword("CORRELATION"),
+            keyword("COVAR"),
+            keyword("COVARIANCE"),
+            keyword("LISTAGG"),
+            keyword("XMLAGG"),
+            keyword("PERCENTILE_CONT"),
+            keyword("PERCENTILE_DISC"),
+            keyword("PERCENT_RANK"),
+            keyword("CUME_DIST"),
+            keyword("GROUPING")
+          )
+        );
+      }
+    
+      return generalAggregate$aggregateNameParser;
+    }
+    
+    // ========================================================
+    // setQuantifier
+    // ........................................................
+    
+    private ParserCombinator generalAggregate$setQuantifierParser = null;
+    
+    public final Start generalAggregate$setQuantifier = Start.on(getNamespace(), "setQuantifier");
+    
+    public ParserCombinator generalAggregate$setQuantifier() {
+      if (generalAggregate$setQuantifierParser == null) {
+        FutureParser future = scoped("setQuantifier", PUBLIC, true);
+        generalAggregate$setQuantifierParser = future;
+        future.setParser(
+          choice(
+            as("distinct",
+              keyword("DISTINCT")
+            ),
+            as("all",
+              keyword("ALL")
+            )
+          )
+        );
+      }
+    
+      return generalAggregate$setQuantifierParser;
     }
     
     // ========================================================

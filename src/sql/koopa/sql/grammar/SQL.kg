@@ -390,13 +390,39 @@ def lessThanOrEqualsOp    =  ( '<' ++ '=' | '!' ++ '>' )  end
 ## Functions
 ## ----------------------------------------------------------------------------
 
-# This is a very incomplete definition, so make sure call sites allow for that. 
 def aggregateFunction =
-    countAll
+    ( countAll
+    | countColumn
+    | generalAggregate
+    )
 end
 
 def countAll =
     COUNT '(' '*' ')'
+end
+
+def countColumn =
+    COUNT '(' [setQuantifier] (unknown: --> ')') ')'
+
+  where def setQuantifier =  ( distinct: DISTINCT | all: ALL )  end
+end
+
+def generalAggregate =
+    aggregateName '(' [setQuantifier] (unknown: --> ')') ')'
+
+  where def aggregateName =
+      ( SUM | AVG | MIN | MAX | MEDIAN
+      | STDDEV | VARIANCE | VAR
+      | CORR | CORRELATION
+      | COVAR | COVARIANCE
+      | LISTAGG | XMLAGG
+      | PERCENTILE_CONT | PERCENTILE_DISC
+      | PERCENT_RANK | CUME_DIST
+      | GROUPING
+      )
+  end
+
+  where def setQuantifier =  ( distinct: DISTINCT | all: ALL )  end
 end
 
 
