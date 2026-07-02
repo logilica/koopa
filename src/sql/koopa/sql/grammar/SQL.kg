@@ -55,7 +55,7 @@ def declareCursorStatement =
     [holdability]
     [returnability]
 
-    FOR queryExpression [orderBy] [updatability]
+    FOR cursorQuery [orderBy] [updatability]
     
     [unknown: --> eof]
     
@@ -63,11 +63,21 @@ def declareCursorStatement =
   where def scrollability   =  (SCROLL | NO SCROLL)                       end
   where def holdability     =  (WITH HOLD | WITHOUT HOLD)                 end
   where def returnability   =  (WITH RETURN | WITHOUT RETURN)             end
-  where def queryExpression =  unknown                                    end
-  where def orderBy         =  ORDER BY unknown                           end
-  where def updatability    =  FOR ( READ ONLY | UPDATE [ OF unknown ] )  end
 
-  where def unknown =  --> ( ORDER BY | FOR | eof )  end 
+  where def cursorQuery =
+      ( selectStatement %before { cursorTrailer }
+      | unknown: --> cursorTrailer
+      )
+  end
+
+  where def orderBy       =  ORDER BY (unknown: --> cursorTrailer)        end
+  where def updatability  =  FOR ( READ ONLY | FETCH ONLY | UPDATE [ OF unknown ] )  end
+
+  where private def cursorTrailer =
+      ( ORDER BY | FOR | WITH | eof )
+  end
+
+  where def unknown =  --> ( ORDER BY | FOR | WITH | eof )  end
 end
 
 def selectStatement =
@@ -75,11 +85,11 @@ def selectStatement =
     [setQuantifier]
     selectList
     [into]
-    from              [ unknown: --> nextBlockOrEnd ]
-    [`where]          [ unknown: --> nextAfterWhere ]
-    [groupBy]         [ unknown: --> nextAfterGroupBy ]
-    [having]          [ unknown: --> nextAfterHaving ]
-    [orderBy]         [ unknown: --> nextAfterOrderBy ]
+    from              [ unknown: --> nextClauseOrEnd ]
+    [`where]          [ unknown: --> nextClauseOrEnd ]
+    [groupBy]         [ unknown: --> nextClauseOrEnd ]
+    [having]          [ unknown: --> nextClauseOrEnd ]
+    [orderBy]         [ unknown: --> nextClauseOrEnd ]
     [fetchFirst]      [ unknown: --> eof ]
 
   where def setQuantifier =  ( distinct: DISTINCT | all: ALL )  end
@@ -105,25 +115,25 @@ def selectStatement =
     end
   end
 
-  where def from =  FROM  tableReferenceList  [unknown: --> nextBlockOrEnd]  end
+  where def from =  FROM  tableReferenceList  [unknown: --> nextClauseOrEnd]  end
 
   where def `where =
       WHERE
       ( searchCondition
       | unknown : _*
-      ) %upto { nextBlockOrEnd }
+      ) %upto { nextClauseOrEnd }
   end
 
   where def groupBy =
-      GROUP BY (unknown: --> nextAfterGroupBy)
+      GROUP BY (unknown: --> nextClauseOrEnd)
   end
 
   where def having =
-      HAVING (unknown: --> nextAfterHaving)
+      HAVING (unknown: --> nextClauseOrEnd)
   end
 
   where def orderBy =
-      ORDER BY (unknown: --> nextAfterOrderBy)
+      ORDER BY (unknown: --> nextClauseOrEnd)
   end
 
   where def fetchFirst =
@@ -131,25 +141,9 @@ def selectStatement =
       (ROW | ROWS) ONLY
   end
 
-  where private def nextBlockOrEnd =
+  where private def nextClauseOrEnd =
       ( FROM | WHERE | GROUP BY | HAVING | ORDER BY | FETCH FIRST | WINDOW | eof )
   end 
-
-  where private def nextAfterWhere =
-      ( GROUP BY | HAVING | ORDER BY | FETCH FIRST | eof )
-  end
-
-  where private def nextAfterGroupBy =
-      ( HAVING | ORDER BY | FETCH FIRST | eof )
-  end
-
-  where private def nextAfterHaving =
-      ( ORDER BY | FETCH FIRST | eof )
-  end
-
-  where private def nextAfterOrderBy =
-      ( FETCH FIRST | eof )
-  end
 end
 
 def insertStatement =

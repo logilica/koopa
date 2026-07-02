@@ -162,7 +162,7 @@ public class SQLGrammar extends SQLBaseGrammar {
               declareCursorStatement$returnability()
             ),
             keyword("FOR"),
-            declareCursorStatement$queryExpression(),
+            declareCursorStatement$cursorQuery(),
             optional(
               declareCursorStatement$orderBy()
             ),
@@ -292,23 +292,34 @@ public class SQLGrammar extends SQLBaseGrammar {
     }
     
     // ========================================================
-    // queryExpression
+    // cursorQuery
     // ........................................................
     
-    private ParserCombinator declareCursorStatement$queryExpressionParser = null;
+    private ParserCombinator declareCursorStatement$cursorQueryParser = null;
     
-    public final Start declareCursorStatement$queryExpression = Start.on(getNamespace(), "queryExpression");
+    public final Start declareCursorStatement$cursorQuery = Start.on(getNamespace(), "cursorQuery");
     
-    public ParserCombinator declareCursorStatement$queryExpression() {
-      if (declareCursorStatement$queryExpressionParser == null) {
-        FutureParser future = scoped("queryExpression", PUBLIC, true);
-        declareCursorStatement$queryExpressionParser = future;
+    public ParserCombinator declareCursorStatement$cursorQuery() {
+      if (declareCursorStatement$cursorQueryParser == null) {
+        FutureParser future = scoped("cursorQuery", PUBLIC, true);
+        declareCursorStatement$cursorQueryParser = future;
         future.setParser(
-          declareCursorStatement$unknown()
+          choice(
+            limited(
+              selectStatement(),
+              // Closure:
+              declareCursorStatement$cursorTrailer()
+            ),
+            as("unknown",
+              skipto(
+                declareCursorStatement$cursorTrailer()
+              )
+            )
+          )
         );
       }
     
-      return declareCursorStatement$queryExpressionParser;
+      return declareCursorStatement$cursorQueryParser;
     }
     
     // ========================================================
@@ -327,7 +338,11 @@ public class SQLGrammar extends SQLBaseGrammar {
           sequence(
             keyword("ORDER"),
             keyword("BY"),
-            declareCursorStatement$unknown()
+            as("unknown",
+              skipto(
+                declareCursorStatement$cursorTrailer()
+              )
+            )
           )
         );
       }
@@ -356,6 +371,10 @@ public class SQLGrammar extends SQLBaseGrammar {
                 keyword("ONLY")
               ),
               sequence(
+                keyword("FETCH"),
+                keyword("ONLY")
+              ),
+              sequence(
                 keyword("UPDATE"),
                 optional(
                   sequence(
@@ -370,6 +389,34 @@ public class SQLGrammar extends SQLBaseGrammar {
       }
     
       return declareCursorStatement$updatabilityParser;
+    }
+    
+    // ========================================================
+    // cursorTrailer
+    // ........................................................
+    
+    private ParserCombinator declareCursorStatement$cursorTrailerParser = null;
+    
+    protected final Start declareCursorStatement$cursorTrailer = Start.on(getNamespace(), "cursorTrailer");
+    
+    protected ParserCombinator declareCursorStatement$cursorTrailer() {
+      if (declareCursorStatement$cursorTrailerParser == null) {
+        FutureParser future = scoped("cursorTrailer", PRIVATE, true);
+        declareCursorStatement$cursorTrailerParser = future;
+        future.setParser(
+          choice(
+            sequence(
+              keyword("ORDER"),
+              keyword("BY")
+            ),
+            keyword("FOR"),
+            keyword("WITH"),
+            eof()
+          )
+        );
+      }
+    
+      return declareCursorStatement$cursorTrailerParser;
     }
     
     // ========================================================
@@ -392,6 +439,7 @@ public class SQLGrammar extends SQLBaseGrammar {
                 keyword("BY")
               ),
               keyword("FOR"),
+              keyword("WITH"),
               eof()
             )
           )
@@ -427,7 +475,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             optional(
               as("unknown",
                 skipto(
-                  selectStatement$nextBlockOrEnd()
+                  selectStatement$nextClauseOrEnd()
                 )
               )
             ),
@@ -437,7 +485,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             optional(
               as("unknown",
                 skipto(
-                  selectStatement$nextAfterWhere()
+                  selectStatement$nextClauseOrEnd()
                 )
               )
             ),
@@ -447,7 +495,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             optional(
               as("unknown",
                 skipto(
-                  selectStatement$nextAfterGroupBy()
+                  selectStatement$nextClauseOrEnd()
                 )
               )
             ),
@@ -457,7 +505,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             optional(
               as("unknown",
                 skipto(
-                  selectStatement$nextAfterHaving()
+                  selectStatement$nextClauseOrEnd()
                 )
               )
             ),
@@ -467,7 +515,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             optional(
               as("unknown",
                 skipto(
-                  selectStatement$nextAfterOrderBy()
+                  selectStatement$nextClauseOrEnd()
                 )
               )
             ),
@@ -666,7 +714,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             optional(
               as("unknown",
                 skipto(
-                  selectStatement$nextBlockOrEnd()
+                  selectStatement$nextClauseOrEnd()
                 )
               )
             )
@@ -702,7 +750,7 @@ public class SQLGrammar extends SQLBaseGrammar {
                 )
               ),
               // Closure:
-              selectStatement$nextBlockOrEnd()
+              selectStatement$nextClauseOrEnd()
             )
           )
         );
@@ -729,7 +777,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             keyword("BY"),
             as("unknown",
               skipto(
-                selectStatement$nextAfterGroupBy()
+                selectStatement$nextClauseOrEnd()
               )
             )
           )
@@ -756,7 +804,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             keyword("HAVING"),
             as("unknown",
               skipto(
-                selectStatement$nextAfterHaving()
+                selectStatement$nextClauseOrEnd()
               )
             )
           )
@@ -784,7 +832,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             keyword("BY"),
             as("unknown",
               skipto(
-                selectStatement$nextAfterOrderBy()
+                selectStatement$nextClauseOrEnd()
               )
             )
           )
@@ -832,17 +880,17 @@ public class SQLGrammar extends SQLBaseGrammar {
     }
     
     // ========================================================
-    // nextBlockOrEnd
+    // nextClauseOrEnd
     // ........................................................
     
-    private ParserCombinator selectStatement$nextBlockOrEndParser = null;
+    private ParserCombinator selectStatement$nextClauseOrEndParser = null;
     
-    protected final Start selectStatement$nextBlockOrEnd = Start.on(getNamespace(), "nextBlockOrEnd");
+    protected final Start selectStatement$nextClauseOrEnd = Start.on(getNamespace(), "nextClauseOrEnd");
     
-    protected ParserCombinator selectStatement$nextBlockOrEnd() {
-      if (selectStatement$nextBlockOrEndParser == null) {
-        FutureParser future = scoped("nextBlockOrEnd", PRIVATE, true);
-        selectStatement$nextBlockOrEndParser = future;
+    protected ParserCombinator selectStatement$nextClauseOrEnd() {
+      if (selectStatement$nextClauseOrEndParser == null) {
+        FutureParser future = scoped("nextClauseOrEnd", PRIVATE, true);
+        selectStatement$nextClauseOrEndParser = future;
         future.setParser(
           choice(
             keyword("FROM"),
@@ -866,129 +914,7 @@ public class SQLGrammar extends SQLBaseGrammar {
         );
       }
     
-      return selectStatement$nextBlockOrEndParser;
-    }
-    
-    // ========================================================
-    // nextAfterWhere
-    // ........................................................
-    
-    private ParserCombinator selectStatement$nextAfterWhereParser = null;
-    
-    protected final Start selectStatement$nextAfterWhere = Start.on(getNamespace(), "nextAfterWhere");
-    
-    protected ParserCombinator selectStatement$nextAfterWhere() {
-      if (selectStatement$nextAfterWhereParser == null) {
-        FutureParser future = scoped("nextAfterWhere", PRIVATE, true);
-        selectStatement$nextAfterWhereParser = future;
-        future.setParser(
-          choice(
-            sequence(
-              keyword("GROUP"),
-              keyword("BY")
-            ),
-            keyword("HAVING"),
-            sequence(
-              keyword("ORDER"),
-              keyword("BY")
-            ),
-            sequence(
-              keyword("FETCH"),
-              keyword("FIRST")
-            ),
-            eof()
-          )
-        );
-      }
-    
-      return selectStatement$nextAfterWhereParser;
-    }
-    
-    // ========================================================
-    // nextAfterGroupBy
-    // ........................................................
-    
-    private ParserCombinator selectStatement$nextAfterGroupByParser = null;
-    
-    protected final Start selectStatement$nextAfterGroupBy = Start.on(getNamespace(), "nextAfterGroupBy");
-    
-    protected ParserCombinator selectStatement$nextAfterGroupBy() {
-      if (selectStatement$nextAfterGroupByParser == null) {
-        FutureParser future = scoped("nextAfterGroupBy", PRIVATE, true);
-        selectStatement$nextAfterGroupByParser = future;
-        future.setParser(
-          choice(
-            keyword("HAVING"),
-            sequence(
-              keyword("ORDER"),
-              keyword("BY")
-            ),
-            sequence(
-              keyword("FETCH"),
-              keyword("FIRST")
-            ),
-            eof()
-          )
-        );
-      }
-    
-      return selectStatement$nextAfterGroupByParser;
-    }
-    
-    // ========================================================
-    // nextAfterHaving
-    // ........................................................
-    
-    private ParserCombinator selectStatement$nextAfterHavingParser = null;
-    
-    protected final Start selectStatement$nextAfterHaving = Start.on(getNamespace(), "nextAfterHaving");
-    
-    protected ParserCombinator selectStatement$nextAfterHaving() {
-      if (selectStatement$nextAfterHavingParser == null) {
-        FutureParser future = scoped("nextAfterHaving", PRIVATE, true);
-        selectStatement$nextAfterHavingParser = future;
-        future.setParser(
-          choice(
-            sequence(
-              keyword("ORDER"),
-              keyword("BY")
-            ),
-            sequence(
-              keyword("FETCH"),
-              keyword("FIRST")
-            ),
-            eof()
-          )
-        );
-      }
-    
-      return selectStatement$nextAfterHavingParser;
-    }
-    
-    // ========================================================
-    // nextAfterOrderBy
-    // ........................................................
-    
-    private ParserCombinator selectStatement$nextAfterOrderByParser = null;
-    
-    protected final Start selectStatement$nextAfterOrderBy = Start.on(getNamespace(), "nextAfterOrderBy");
-    
-    protected ParserCombinator selectStatement$nextAfterOrderBy() {
-      if (selectStatement$nextAfterOrderByParser == null) {
-        FutureParser future = scoped("nextAfterOrderBy", PRIVATE, true);
-        selectStatement$nextAfterOrderByParser = future;
-        future.setParser(
-          choice(
-            sequence(
-              keyword("FETCH"),
-              keyword("FIRST")
-            ),
-            eof()
-          )
-        );
-      }
-    
-      return selectStatement$nextAfterOrderByParser;
+      return selectStatement$nextClauseOrEndParser;
     }
     
     // ========================================================

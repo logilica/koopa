@@ -26,3 +26,54 @@ target selectStatement;
      [, ]
      HostParameter:hostParameterSpecification [
    FROM STUDENTS WHERE ID = 42 ]
+
+# Aggregate without WHERE — should parse, no where child
++[ SELECT COUNT(*) INTO ] HostParameter:hostParameterSpecification [
+   FROM ACCOUNTS ]
+
+# Multiple aggregates without WHERE
++[ SELECT COUNT(*), SUM(BALANCE), AVG(BALANCE) INTO ]
+     HostParameter:hostParameterSpecification [, ]
+     HostParameter:hostParameterSpecification [, ]
+     HostParameter:hostParameterSpecification [
+   FROM ACCOUNTS ]
+
+# Scalar from SYSIBM.SYSDUMMY1
++[ SELECT CURRENT DATE INTO ] HostParameter:hostParameterSpecification [
+   FROM SYSIBM.SYSDUMMY1 ]
+
+# Date arithmetic from utility table
++[ SELECT CURRENT DATE + 1 DAY INTO ] HostParameter:hostParameterSpecification [
+   FROM SYSIBM.SYSDUMMY1 ]
+
+# SELECT from SESSION temp table without WHERE
++[ SELECT TMP_ACCT_ID, TMP_STATUS INTO ]
+     HostParameter:hostParameterSpecification [, ]
+     HostParameter:hostParameterSpecification [
+   FROM SESSION.TEMP_RESULTS
+   FETCH FIRST 1 ROW ONLY ]
+
+# Aggregate with GROUP BY, no WHERE — weak sanitiser case
++[ SELECT CARD_NUMBER, COUNT(*) INTO ]
+     HostParameter:hostParameterSpecification [, ]
+     HostParameter:hostParameterSpecification [
+   FROM PAYMENT_CARDS
+   GROUP BY CARD_NUMBER
+   FETCH FIRST 1 ROW ONLY ]
+
+# SELECT with DISTINCT, no WHERE
++[ SELECT DISTINCT STATUS INTO ] HostParameter:hostParameterSpecification [
+   FROM ACCOUNTS
+   FETCH FIRST 1 ROW ONLY ]
+
+# Multi-table cross join without WHERE — data leak
++[ SELECT CURRENT DATE, CUST_NAME INTO ]
+     HostParameter:hostParameterSpecification [, ]
+     HostParameter:hostParameterSpecification [
+   FROM SYSIBM.SYSDUMMY1, CUSTOMER_MASTER ]
+
+# Subquery in SELECT list
++[ SELECT (SELECT CURRENT DATE FROM SYSIBM.SYSDUMMY1), CUST_NAME INTO ]
+     HostParameter:hostParameterSpecification [, ]
+     HostParameter:hostParameterSpecification [
+   FROM CUSTOMER_MASTER ]
