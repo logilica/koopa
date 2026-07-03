@@ -48,7 +48,10 @@ public class SQLGrammar extends SQLBaseGrammar {
           choice(
             includeStatement(),
             declareSessionStatement(),
+            declareGlobalTempTableStatement(),
+            declareTableStatement(),
             declareCursorStatement(),
+            valuesIntoStatement(),
             selectStatement(),
             insertStatement(),
             updateStatement(),
@@ -133,6 +136,99 @@ public class SQLGrammar extends SQLBaseGrammar {
     }
     
     // ========================================================
+    // declareGlobalTempTableStatement
+    // ........................................................
+    
+    private ParserCombinator declareGlobalTempTableStatementParser = null;
+    
+    public final Start declareGlobalTempTableStatement = Start.on(getNamespace(), "declareGlobalTempTableStatement");
+    
+    public ParserCombinator declareGlobalTempTableStatement() {
+      if (declareGlobalTempTableStatementParser == null) {
+        FutureParser future = scoped("declareGlobalTempTableStatement", PUBLIC, true);
+        declareGlobalTempTableStatementParser = future;
+        future.setParser(
+          sequence(
+            keyword("DECLARE"),
+            keyword("GLOBAL"),
+            keyword("TEMPORARY"),
+            keyword("TABLE"),
+            identifier(),
+            optional(
+              as("unknown",
+                skipto(
+                  eof()
+                )
+              )
+            )
+          )
+        );
+      }
+    
+      return declareGlobalTempTableStatementParser;
+    }
+    
+    // ========================================================
+    // declareTableStatement
+    // ........................................................
+    
+    private ParserCombinator declareTableStatementParser = null;
+    
+    public final Start declareTableStatement = Start.on(getNamespace(), "declareTableStatement");
+    
+    public ParserCombinator declareTableStatement() {
+      if (declareTableStatementParser == null) {
+        FutureParser future = scoped("declareTableStatement", PUBLIC, true);
+        declareTableStatementParser = future;
+        future.setParser(
+          sequence(
+            keyword("DECLARE"),
+            identifier(),
+            keyword("TABLE"),
+            optional(
+              as("unknown",
+                skipto(
+                  eof()
+                )
+              )
+            )
+          )
+        );
+      }
+    
+      return declareTableStatementParser;
+    }
+    
+    // ========================================================
+    // valuesIntoStatement
+    // ........................................................
+    
+    private ParserCombinator valuesIntoStatementParser = null;
+    
+    public final Start valuesIntoStatement = Start.on(getNamespace(), "valuesIntoStatement");
+    
+    public ParserCombinator valuesIntoStatement() {
+      if (valuesIntoStatementParser == null) {
+        FutureParser future = scoped("valuesIntoStatement", PUBLIC, true);
+        valuesIntoStatementParser = future;
+        future.setParser(
+          sequence(
+            keyword("VALUES"),
+            optional(
+              as("unknown",
+                skipto(
+                  eof()
+                )
+              )
+            )
+          )
+        );
+      }
+    
+      return valuesIntoStatementParser;
+    }
+    
+    // ========================================================
     // declareCursorStatement
     // ........................................................
     
@@ -161,8 +257,11 @@ public class SQLGrammar extends SQLBaseGrammar {
             optional(
               declareCursorStatement$returnability()
             ),
+            optional(
+              declareCursorStatement$positioning()
+            ),
             keyword("FOR"),
-            declareCursorStatement$cursorQuery(),
+            declareCursorStatement$queryExpression(),
             optional(
               declareCursorStatement$orderBy()
             ),
@@ -292,17 +391,41 @@ public class SQLGrammar extends SQLBaseGrammar {
     }
     
     // ========================================================
-    // cursorQuery
+    // positioning
     // ........................................................
     
-    private ParserCombinator declareCursorStatement$cursorQueryParser = null;
+    private ParserCombinator declareCursorStatement$positioningParser = null;
     
-    public final Start declareCursorStatement$cursorQuery = Start.on(getNamespace(), "cursorQuery");
+    public final Start declareCursorStatement$positioning = Start.on(getNamespace(), "positioning");
     
-    public ParserCombinator declareCursorStatement$cursorQuery() {
-      if (declareCursorStatement$cursorQueryParser == null) {
-        FutureParser future = scoped("cursorQuery", PUBLIC, true);
-        declareCursorStatement$cursorQueryParser = future;
+    public ParserCombinator declareCursorStatement$positioning() {
+      if (declareCursorStatement$positioningParser == null) {
+        FutureParser future = scoped("positioning", PUBLIC, true);
+        declareCursorStatement$positioningParser = future;
+        future.setParser(
+          sequence(
+            keyword("WITH"),
+            keyword("ROWSET"),
+            keyword("POSITIONING")
+          )
+        );
+      }
+    
+      return declareCursorStatement$positioningParser;
+    }
+    
+    // ========================================================
+    // queryExpression
+    // ........................................................
+    
+    private ParserCombinator declareCursorStatement$queryExpressionParser = null;
+    
+    public final Start declareCursorStatement$queryExpression = Start.on(getNamespace(), "queryExpression");
+    
+    public ParserCombinator declareCursorStatement$queryExpression() {
+      if (declareCursorStatement$queryExpressionParser == null) {
+        FutureParser future = scoped("queryExpression", PUBLIC, true);
+        declareCursorStatement$queryExpressionParser = future;
         future.setParser(
           choice(
             limited(
@@ -319,7 +442,7 @@ public class SQLGrammar extends SQLBaseGrammar {
         );
       }
     
-      return declareCursorStatement$cursorQueryParser;
+      return declareCursorStatement$queryExpressionParser;
     }
     
     // ========================================================
@@ -475,7 +598,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             optional(
               as("unknown",
                 skipto(
-                  selectStatement$nextClauseOrEnd()
+                  selectStatement$nextBlockOrEnd()
                 )
               )
             ),
@@ -485,7 +608,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             optional(
               as("unknown",
                 skipto(
-                  selectStatement$nextClauseOrEnd()
+                  selectStatement$nextBlockOrEnd()
                 )
               )
             ),
@@ -495,7 +618,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             optional(
               as("unknown",
                 skipto(
-                  selectStatement$nextClauseOrEnd()
+                  selectStatement$nextBlockOrEnd()
                 )
               )
             ),
@@ -505,7 +628,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             optional(
               as("unknown",
                 skipto(
-                  selectStatement$nextClauseOrEnd()
+                  selectStatement$nextBlockOrEnd()
                 )
               )
             ),
@@ -515,7 +638,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             optional(
               as("unknown",
                 skipto(
-                  selectStatement$nextClauseOrEnd()
+                  selectStatement$nextBlockOrEnd()
                 )
               )
             ),
@@ -714,7 +837,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             optional(
               as("unknown",
                 skipto(
-                  selectStatement$nextClauseOrEnd()
+                  selectStatement$nextBlockOrEnd()
                 )
               )
             )
@@ -750,7 +873,7 @@ public class SQLGrammar extends SQLBaseGrammar {
                 )
               ),
               // Closure:
-              selectStatement$nextClauseOrEnd()
+              selectStatement$nextBlockOrEnd()
             )
           )
         );
@@ -777,7 +900,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             keyword("BY"),
             as("unknown",
               skipto(
-                selectStatement$nextClauseOrEnd()
+                selectStatement$nextBlockOrEnd()
               )
             )
           )
@@ -804,7 +927,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             keyword("HAVING"),
             as("unknown",
               skipto(
-                selectStatement$nextClauseOrEnd()
+                selectStatement$nextBlockOrEnd()
               )
             )
           )
@@ -832,7 +955,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             keyword("BY"),
             as("unknown",
               skipto(
-                selectStatement$nextClauseOrEnd()
+                selectStatement$nextBlockOrEnd()
               )
             )
           )
@@ -880,17 +1003,17 @@ public class SQLGrammar extends SQLBaseGrammar {
     }
     
     // ========================================================
-    // nextClauseOrEnd
+    // nextBlockOrEnd
     // ........................................................
     
-    private ParserCombinator selectStatement$nextClauseOrEndParser = null;
+    private ParserCombinator selectStatement$nextBlockOrEndParser = null;
     
-    protected final Start selectStatement$nextClauseOrEnd = Start.on(getNamespace(), "nextClauseOrEnd");
+    protected final Start selectStatement$nextBlockOrEnd = Start.on(getNamespace(), "nextBlockOrEnd");
     
-    protected ParserCombinator selectStatement$nextClauseOrEnd() {
-      if (selectStatement$nextClauseOrEndParser == null) {
-        FutureParser future = scoped("nextClauseOrEnd", PRIVATE, true);
-        selectStatement$nextClauseOrEndParser = future;
+    protected ParserCombinator selectStatement$nextBlockOrEnd() {
+      if (selectStatement$nextBlockOrEndParser == null) {
+        FutureParser future = scoped("nextBlockOrEnd", PRIVATE, true);
+        selectStatement$nextBlockOrEndParser = future;
         future.setParser(
           choice(
             keyword("FROM"),
@@ -914,7 +1037,7 @@ public class SQLGrammar extends SQLBaseGrammar {
         );
       }
     
-      return selectStatement$nextClauseOrEndParser;
+      return selectStatement$nextBlockOrEndParser;
     }
     
     // ========================================================

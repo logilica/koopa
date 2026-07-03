@@ -1,0 +1,13 @@
+target valuesIntoStatement;
+
+# Basic VALUES with scalar expression
++[ VALUES ( CURRENT DATE ) INTO ] HostParameter:hostParameterSpecification
+
+# VALUES with arithmetic
++[ VALUES ( 1 + 2 ) INTO ] HostParameter:hostParameterSpecification
+
+# VALUES with date computation
++[ VALUES ( DAY ( CURRENT DATE + 1 DAY ) ) ]
+
+# Should reject: SELECT is not VALUES
+-[ SELECT CURRENT DATE FROM DUAL ]

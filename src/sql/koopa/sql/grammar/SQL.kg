@@ -14,7 +14,10 @@ grammar SQL extends SQLBase.
 def sqlStatement =
     ( includeStatement
     | declareSessionStatement
+    | declareGlobalTempTableStatement
+    | declareTableStatement
     | declareCursorStatement
+    | valuesIntoStatement
     | selectStatement
     | insertStatement
     | updateStatement
@@ -49,13 +52,28 @@ def declareSessionStatement =
     [unknown: --> eof]
 end
 
+def declareGlobalTempTableStatement =
+    DECLARE GLOBAL TEMPORARY TABLE identifier
+    [unknown: --> eof]
+end
+
+def declareTableStatement =
+    DECLARE identifier TABLE
+    [unknown: --> eof]
+end
+
+def valuesIntoStatement =
+    VALUES [unknown: --> eof]
+end
+
 def declareCursorStatement =
     DECLARE cursorName [sensitivity] [scrollability] CURSOR
 
     [holdability]
     [returnability]
+    [positioning]
 
-    FOR cursorQuery [orderBy] [updatability]
+    FOR queryExpression [orderBy] [updatability]
     
     [unknown: --> eof]
     
@@ -63,8 +81,9 @@ def declareCursorStatement =
   where def scrollability   =  (SCROLL | NO SCROLL)                       end
   where def holdability     =  (WITH HOLD | WITHOUT HOLD)                 end
   where def returnability   =  (WITH RETURN | WITHOUT RETURN)             end
+  where def positioning     =  (WITH ROWSET POSITIONING)                  end
 
-  where def cursorQuery =
+  where def queryExpression =
       ( selectStatement %before { cursorTrailer }
       | unknown: --> cursorTrailer
       )
@@ -85,11 +104,11 @@ def selectStatement =
     [setQuantifier]
     selectList
     [into]
-    from              [ unknown: --> nextClauseOrEnd ]
-    [`where]          [ unknown: --> nextClauseOrEnd ]
-    [groupBy]         [ unknown: --> nextClauseOrEnd ]
-    [having]          [ unknown: --> nextClauseOrEnd ]
-    [orderBy]         [ unknown: --> nextClauseOrEnd ]
+    from              [ unknown: --> nextBlockOrEnd ]
+    [`where]          [ unknown: --> nextBlockOrEnd ]
+    [groupBy]         [ unknown: --> nextBlockOrEnd ]
+    [having]          [ unknown: --> nextBlockOrEnd ]
+    [orderBy]         [ unknown: --> nextBlockOrEnd ]
     [fetchFirst]      [ unknown: --> eof ]
 
   where def setQuantifier =  ( distinct: DISTINCT | all: ALL )  end
@@ -115,25 +134,25 @@ def selectStatement =
     end
   end
 
-  where def from =  FROM  tableReferenceList  [unknown: --> nextClauseOrEnd]  end
+  where def from =  FROM  tableReferenceList  [unknown: --> nextBlockOrEnd]  end
 
   where def `where =
       WHERE
       ( searchCondition
       | unknown : _*
-      ) %upto { nextClauseOrEnd }
+      ) %upto { nextBlockOrEnd }
   end
 
   where def groupBy =
-      GROUP BY (unknown: --> nextClauseOrEnd)
+      GROUP BY (unknown: --> nextBlockOrEnd)
   end
 
   where def having =
-      HAVING (unknown: --> nextClauseOrEnd)
+      HAVING (unknown: --> nextBlockOrEnd)
   end
 
   where def orderBy =
-      ORDER BY (unknown: --> nextClauseOrEnd)
+      ORDER BY (unknown: --> nextBlockOrEnd)
   end
 
   where def fetchFirst =
@@ -141,7 +160,7 @@ def selectStatement =
       (ROW | ROWS) ONLY
   end
 
-  where private def nextClauseOrEnd =
+  where private def nextBlockOrEnd =
       ( FROM | WHERE | GROUP BY | HAVING | ORDER BY | FETCH FIRST | WINDOW | eof )
   end 
 end
