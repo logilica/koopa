@@ -22,6 +22,7 @@ def sqlStatement =
     | insertStatement
     | updateStatement
     | deleteStatement
+    | mergeStatement
     | fetchStatement
     | openStatement
     | closeStatement
@@ -191,6 +192,11 @@ end
 def deleteStatement = 
     DELETE FROM targetTable
     [--> eof]
+end
+
+def mergeStatement =
+    MERGE INTO tableName
+    [unknown: --> eof]
 end
 
 def openStatement =

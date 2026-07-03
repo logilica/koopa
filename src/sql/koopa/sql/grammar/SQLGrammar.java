@@ -56,6 +56,7 @@ public class SQLGrammar extends SQLBaseGrammar {
             insertStatement(),
             updateStatement(),
             deleteStatement(),
+            mergeStatement(),
             fetchStatement(),
             openStatement(),
             closeStatement(),
@@ -1203,6 +1204,37 @@ public class SQLGrammar extends SQLBaseGrammar {
       }
     
       return deleteStatementParser;
+    }
+    
+    // ========================================================
+    // mergeStatement
+    // ........................................................
+    
+    private ParserCombinator mergeStatementParser = null;
+    
+    public final Start mergeStatement = Start.on(getNamespace(), "mergeStatement");
+    
+    public ParserCombinator mergeStatement() {
+      if (mergeStatementParser == null) {
+        FutureParser future = scoped("mergeStatement", PUBLIC, true);
+        mergeStatementParser = future;
+        future.setParser(
+          sequence(
+            keyword("MERGE"),
+            keyword("INTO"),
+            tableName(),
+            optional(
+              as("unknown",
+                skipto(
+                  eof()
+                )
+              )
+            )
+          )
+        );
+      }
+    
+      return mergeStatementParser;
     }
     
     // ========================================================

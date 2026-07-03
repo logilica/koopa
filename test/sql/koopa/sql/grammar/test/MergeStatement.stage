@@ -1,0 +1,13 @@
+target mergeStatement;
+
+# Basic MERGE INTO
++[ MERGE INTO COUNTRIES USING ( VALUES ( 1 ) ) ]
+
+# MERGE with schema-qualified table
++[ MERGE INTO SCHEMA1.ACCOUNTS USING ( VALUES ( 1 , 2 ) ) ]
+
+# Should reject: missing INTO
+-[ MERGE COUNTRIES ]
+
+# Should reject: not a MERGE
+-[ INSERT INTO COUNTRIES VALUES ( 1 ) ]
