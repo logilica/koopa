@@ -264,12 +264,6 @@ public class SQLGrammar extends SQLBaseGrammar {
             keyword("FOR"),
             declareCursorStatement$queryExpression(),
             optional(
-              declareCursorStatement$orderBy()
-            ),
-            optional(
-              declareCursorStatement$updatability()
-            ),
-            optional(
               as("unknown",
                 skipto(
                   eof()
@@ -429,14 +423,10 @@ public class SQLGrammar extends SQLBaseGrammar {
         declareCursorStatement$queryExpressionParser = future;
         future.setParser(
           choice(
-            limited(
-              selectStatement(),
-              // Closure:
-              declareCursorStatement$cursorTrailer()
-            ),
+            selectStatement(),
             as("unknown",
               skipto(
-                declareCursorStatement$cursorTrailer()
+                eof()
               )
             )
           )
@@ -444,133 +434,6 @@ public class SQLGrammar extends SQLBaseGrammar {
       }
     
       return declareCursorStatement$queryExpressionParser;
-    }
-    
-    // ========================================================
-    // orderBy
-    // ........................................................
-    
-    private ParserCombinator declareCursorStatement$orderByParser = null;
-    
-    public final Start declareCursorStatement$orderBy = Start.on(getNamespace(), "orderBy");
-    
-    public ParserCombinator declareCursorStatement$orderBy() {
-      if (declareCursorStatement$orderByParser == null) {
-        FutureParser future = scoped("orderBy", PUBLIC, true);
-        declareCursorStatement$orderByParser = future;
-        future.setParser(
-          sequence(
-            keyword("ORDER"),
-            keyword("BY"),
-            as("unknown",
-              skipto(
-                declareCursorStatement$cursorTrailer()
-              )
-            )
-          )
-        );
-      }
-    
-      return declareCursorStatement$orderByParser;
-    }
-    
-    // ========================================================
-    // updatability
-    // ........................................................
-    
-    private ParserCombinator declareCursorStatement$updatabilityParser = null;
-    
-    public final Start declareCursorStatement$updatability = Start.on(getNamespace(), "updatability");
-    
-    public ParserCombinator declareCursorStatement$updatability() {
-      if (declareCursorStatement$updatabilityParser == null) {
-        FutureParser future = scoped("updatability", PUBLIC, true);
-        declareCursorStatement$updatabilityParser = future;
-        future.setParser(
-          sequence(
-            keyword("FOR"),
-            choice(
-              sequence(
-                keyword("READ"),
-                keyword("ONLY")
-              ),
-              sequence(
-                keyword("FETCH"),
-                keyword("ONLY")
-              ),
-              sequence(
-                keyword("UPDATE"),
-                optional(
-                  sequence(
-                    keyword("OF"),
-                    declareCursorStatement$unknown()
-                  )
-                )
-              )
-            )
-          )
-        );
-      }
-    
-      return declareCursorStatement$updatabilityParser;
-    }
-    
-    // ========================================================
-    // cursorTrailer
-    // ........................................................
-    
-    private ParserCombinator declareCursorStatement$cursorTrailerParser = null;
-    
-    protected final Start declareCursorStatement$cursorTrailer = Start.on(getNamespace(), "cursorTrailer");
-    
-    protected ParserCombinator declareCursorStatement$cursorTrailer() {
-      if (declareCursorStatement$cursorTrailerParser == null) {
-        FutureParser future = scoped("cursorTrailer", PRIVATE, true);
-        declareCursorStatement$cursorTrailerParser = future;
-        future.setParser(
-          choice(
-            sequence(
-              keyword("ORDER"),
-              keyword("BY")
-            ),
-            keyword("FOR"),
-            keyword("WITH"),
-            eof()
-          )
-        );
-      }
-    
-      return declareCursorStatement$cursorTrailerParser;
-    }
-    
-    // ========================================================
-    // unknown
-    // ........................................................
-    
-    private ParserCombinator declareCursorStatement$unknownParser = null;
-    
-    public final Start declareCursorStatement$unknown = Start.on(getNamespace(), "unknown");
-    
-    public ParserCombinator declareCursorStatement$unknown() {
-      if (declareCursorStatement$unknownParser == null) {
-        FutureParser future = scoped("unknown", PUBLIC, true);
-        declareCursorStatement$unknownParser = future;
-        future.setParser(
-          skipto(
-            choice(
-              sequence(
-                keyword("ORDER"),
-                keyword("BY")
-              ),
-              keyword("FOR"),
-              keyword("WITH"),
-              eof()
-            )
-          )
-        );
-      }
-    
-      return declareCursorStatement$unknownParser;
     }
     
     // ========================================================
@@ -645,6 +508,16 @@ public class SQLGrammar extends SQLBaseGrammar {
             ),
             optional(
               selectStatement$fetchFirst()
+            ),
+            optional(
+              as("unknown",
+                skipto(
+                  selectStatement$nextBlockOrEnd()
+                )
+              )
+            ),
+            optional(
+              selectStatement$updatability()
             ),
             optional(
               as("unknown",
@@ -1004,6 +877,51 @@ public class SQLGrammar extends SQLBaseGrammar {
     }
     
     // ========================================================
+    // updatability
+    // ........................................................
+    
+    private ParserCombinator selectStatement$updatabilityParser = null;
+    
+    public final Start selectStatement$updatability = Start.on(getNamespace(), "updatability");
+    
+    public ParserCombinator selectStatement$updatability() {
+      if (selectStatement$updatabilityParser == null) {
+        FutureParser future = scoped("updatability", PUBLIC, true);
+        selectStatement$updatabilityParser = future;
+        future.setParser(
+          sequence(
+            keyword("FOR"),
+            choice(
+              sequence(
+                keyword("READ"),
+                keyword("ONLY")
+              ),
+              sequence(
+                keyword("FETCH"),
+                keyword("ONLY")
+              ),
+              sequence(
+                keyword("UPDATE"),
+                optional(
+                  sequence(
+                    keyword("OF"),
+                    as("unknown",
+                      skipto(
+                        selectStatement$nextBlockOrEnd()
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        );
+      }
+    
+      return selectStatement$updatabilityParser;
+    }
+    
+    // ========================================================
     // nextBlockOrEnd
     // ........................................................
     
@@ -1033,6 +951,8 @@ public class SQLGrammar extends SQLBaseGrammar {
               keyword("FIRST")
             ),
             keyword("WINDOW"),
+            keyword("FOR"),
+            keyword("WITH"),
             eof()
           )
         );
