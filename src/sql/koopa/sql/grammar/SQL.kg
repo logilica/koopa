@@ -74,7 +74,7 @@ def declareCursorStatement =
     [returnability]
     [positioning]
 
-    FOR queryExpression [orderBy] [updatability]
+    FOR queryExpression
     
     [unknown: --> eof]
     
@@ -84,20 +84,14 @@ def declareCursorStatement =
   where def returnability   =  (WITH RETURN | WITHOUT RETURN)             end
   where def positioning     =  (WITH ROWSET POSITIONING)                  end
 
+  # A cursor is declared FOR a select-statement. selectStatement owns all of
+  # its trailing clauses (ORDER BY, FETCH FIRST, FOR UPDATE / FOR READ ONLY),
+  # so there is nothing to handle at the cursor level after it.
   where def queryExpression =
-      ( selectStatement %before { cursorTrailer }
-      | unknown: --> cursorTrailer
+      ( selectStatement
+      | unknown: --> eof
       )
   end
-
-  where def orderBy       =  ORDER BY (unknown: --> cursorTrailer)        end
-  where def updatability  =  FOR ( READ ONLY | FETCH ONLY | UPDATE [ OF unknown ] )  end
-
-  where private def cursorTrailer =
-      ( ORDER BY | FOR | WITH | eof )
-  end
-
-  where def unknown =  --> ( ORDER BY | FOR | WITH | eof )  end
 end
 
 def selectStatement =
@@ -110,7 +104,8 @@ def selectStatement =
     [groupBy]         [ unknown: --> nextBlockOrEnd ]
     [having]          [ unknown: --> nextBlockOrEnd ]
     [orderBy]         [ unknown: --> nextBlockOrEnd ]
-    [fetchFirst]      [ unknown: --> eof ]
+    [fetchFirst]      [ unknown: --> nextBlockOrEnd ]
+    [updatability]    [ unknown: --> eof ]
 
   where def setQuantifier =  ( distinct: DISTINCT | all: ALL )  end
   
@@ -161,8 +156,13 @@ def selectStatement =
       (ROW | ROWS) ONLY
   end
 
+  where def updatability =
+      FOR ( READ ONLY | FETCH ONLY | UPDATE [ OF (unknown: --> nextBlockOrEnd) ] )
+  end
+
   where private def nextBlockOrEnd =
-      ( FROM | WHERE | GROUP BY | HAVING | ORDER BY | FETCH FIRST | WINDOW | eof )
+      ( FROM | WHERE | GROUP BY | HAVING | ORDER BY | FETCH FIRST | WINDOW
+      | FOR | WITH | eof )
   end 
 end
 
