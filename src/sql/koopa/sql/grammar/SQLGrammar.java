@@ -3054,8 +3054,11 @@ public class SQLGrammar extends SQLBaseGrammar {
             tableReference(),
             star(
               sequence(
-                literal(","),
-                tableReference()
+                tableReferenceList$joinOperator(),
+                tableReference(),
+                optional(
+                  tableReferenceList$joinCondition()
+                )
               )
             )
           )
@@ -3063,6 +3066,130 @@ public class SQLGrammar extends SQLBaseGrammar {
       }
     
       return tableReferenceListParser;
+    }
+    
+    // ========================================================
+    // joinOperator
+    // ........................................................
+    
+    private ParserCombinator tableReferenceList$joinOperatorParser = null;
+    
+    protected final Start tableReferenceList$joinOperator = Start.on(getNamespace(), "joinOperator");
+    
+    protected ParserCombinator tableReferenceList$joinOperator() {
+      if (tableReferenceList$joinOperatorParser == null) {
+        FutureParser future = scoped("joinOperator", PRIVATE, true);
+        tableReferenceList$joinOperatorParser = future;
+        future.setParser(
+          choice(
+            literal(","),
+            sequence(
+              optional(
+                choice(
+                  keyword("INNER"),
+                  sequence(
+                    choice(
+                      keyword("LEFT"),
+                      keyword("RIGHT"),
+                      keyword("FULL")
+                    ),
+                    optional(
+                      keyword("OUTER")
+                    )
+                  ),
+                  keyword("CROSS")
+                )
+              ),
+              keyword("JOIN")
+            )
+          )
+        );
+      }
+    
+      return tableReferenceList$joinOperatorParser;
+    }
+    
+    // ========================================================
+    // joinCondition
+    // ........................................................
+    
+    private ParserCombinator tableReferenceList$joinConditionParser = null;
+    
+    protected final Start tableReferenceList$joinCondition = Start.on(getNamespace(), "joinCondition");
+    
+    protected ParserCombinator tableReferenceList$joinCondition() {
+      if (tableReferenceList$joinConditionParser == null) {
+        FutureParser future = scoped("joinCondition", PRIVATE, true);
+        tableReferenceList$joinConditionParser = future;
+        future.setParser(
+          choice(
+            sequence(
+              keyword("ON"),
+              as("unknown",
+                skipto(
+                  tableReferenceList$afterJoinCondition()
+                )
+              )
+            ),
+            sequence(
+              keyword("USING"),
+              as("unknown",
+                skipto(
+                  tableReferenceList$afterJoinCondition()
+                )
+              )
+            )
+          )
+        );
+      }
+    
+      return tableReferenceList$joinConditionParser;
+    }
+    
+    // ========================================================
+    // afterJoinCondition
+    // ........................................................
+    
+    private ParserCombinator tableReferenceList$afterJoinConditionParser = null;
+    
+    protected final Start tableReferenceList$afterJoinCondition = Start.on(getNamespace(), "afterJoinCondition");
+    
+    protected ParserCombinator tableReferenceList$afterJoinCondition() {
+      if (tableReferenceList$afterJoinConditionParser == null) {
+        FutureParser future = scoped("afterJoinCondition", PRIVATE, true);
+        tableReferenceList$afterJoinConditionParser = future;
+        future.setParser(
+          choice(
+            literal(","),
+            keyword("INNER"),
+            keyword("LEFT"),
+            keyword("RIGHT"),
+            keyword("FULL"),
+            keyword("CROSS"),
+            keyword("JOIN"),
+            keyword("WHERE"),
+            sequence(
+              keyword("GROUP"),
+              keyword("BY")
+            ),
+            keyword("HAVING"),
+            sequence(
+              keyword("ORDER"),
+              keyword("BY")
+            ),
+            sequence(
+              keyword("FETCH"),
+              keyword("FIRST")
+            ),
+            keyword("WINDOW"),
+            keyword("FOR"),
+            keyword("WITH"),
+            eof()
+          )
+        );
+      }
+    
+      return tableReferenceList$afterJoinConditionParser;
     }
     
     // ========================================================
