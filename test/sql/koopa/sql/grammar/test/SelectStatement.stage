@@ -77,3 +77,20 @@ target selectStatement;
      HostParameter:hostParameterSpecification [, ]
      HostParameter:hostParameterSpecification [
    FROM CUSTOMER_MASTER ]
+
+# Explicit CROSS JOIN keyword — both tables captured (no WHERE, data leak)
++[ SELECT CURRENT DATE, ACCT_ID
+   FROM SYSIBM.SYSDUMMY1 CROSS JOIN ACCOUNTS ]
+
+# INNER JOIN with ON predicate
++[ SELECT COL1, COL2
+   FROM T1 INNER JOIN T2 ON COL3 = COL4
+   WHERE COL1 = 1 ]
+
+# LEFT OUTER JOIN
++[ SELECT COL1
+   FROM T1 LEFT OUTER JOIN T2 ON COL3 = COL4 ]
+
+# Bare JOIN chained with a comma reference
++[ SELECT COL1
+   FROM T1 JOIN T2 ON COL3 = COL4, T3 ]

@@ -601,7 +601,35 @@ def regularIdentifier   =  word  end
 def delimitedIdentifier =  str   end
 
 
-def tableReferenceList =  tableReference (',' tableReference)*  end
+def tableReferenceList =
+    tableReference ( joinOperator tableReference [joinCondition] )*
+
+  # Tables are separated either by a comma (cross join) or by an explicit
+  # join operator. Either way each table surfaces as its own tableReference.
+  where private def joinOperator =
+      ( ','
+      | [ INNER
+        | ( LEFT | RIGHT | FULL ) [ OUTER ]
+        | CROSS
+        ] JOIN
+      )
+  end
+
+  # The ON / USING predicate of a join is skipped as water, bounded before the
+  # next join, the next table-list separator, or the end of the FROM clause.
+  where private def joinCondition =
+      ( ON    (unknown: --> afterJoinCondition)
+      | USING (unknown: --> afterJoinCondition)
+      )
+  end
+
+  where private def afterJoinCondition =
+      ( ','
+      | INNER | LEFT | RIGHT | FULL | CROSS | JOIN
+      | WHERE | GROUP BY | HAVING | ORDER BY | FETCH FIRST | WINDOW
+      | FOR | WITH | eof )
+  end
+end
 
 # Note: this one is a huge oversimplification...
 def tableReference =  tableName  end
