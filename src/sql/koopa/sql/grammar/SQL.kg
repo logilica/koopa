@@ -58,7 +58,8 @@ def declareGlobalTempTableStatement =
     [unknown: --> eof]
 end
 
-def declareTableStatement =
+# The DECLARE TABLE statement (DCLGEN documentation) is Db2 embedded SQL.
+def declareTableStatement =                          # [IBM DB2 SQL Statements]
     DECLARE identifier TABLE
     [unknown: --> eof]
 end
@@ -72,7 +73,7 @@ def declareCursorStatement =
 
     [holdability]
     [returnability]
-    [positioning]
+    [positioning]                                    # [IBM DB2 SQL Statements]
 
     FOR queryExpression
     
@@ -157,7 +158,10 @@ def selectStatement =
   end
 
   where def updatability =
-      FOR ( READ ONLY | FETCH ONLY | UPDATE [ OF (unknown: --> nextBlockOrEnd) ] )
+      FOR ( READ ONLY
+          | FETCH ONLY                               # [IBM DB2 SQL Statements]
+          | UPDATE [ OF (unknown: --> nextBlockOrEnd) ]
+          )
   end
 
   where private def nextBlockOrEnd =
