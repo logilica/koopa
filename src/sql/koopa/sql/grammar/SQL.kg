@@ -14,15 +14,27 @@ grammar SQL extends SQLBase.
 def sqlStatement =
     ( includeStatement
     | declareSessionStatement
+    | declareGlobalTempTableStatement
+    | declareTableStatement
     | declareCursorStatement
+    | valuesIntoStatement
     | selectStatement
     | insertStatement
     | updateStatement
     | deleteStatement
+    | mergeStatement
+    | fetchStatement
     | openStatement
     | closeStatement
+    | commitStatement
     | rollbackStatement
     | lockTableStatement
+    | setStatement
+    | getDiagnosticsStatement
+    | prepareStatement
+    | executeImmediateStatement
+    | executeStatement
+    | describeStatement
     
     | alterStatement
     | createStatement
@@ -41,13 +53,29 @@ def declareSessionStatement =
     [unknown: --> eof]
 end
 
+def declareGlobalTempTableStatement =
+    DECLARE GLOBAL TEMPORARY TABLE identifier
+    [unknown: --> eof]
+end
+
+# The DECLARE TABLE statement (DCLGEN documentation) is Db2 embedded SQL.
+def declareTableStatement =                          # [IBM DB2 SQL Statements]
+    DECLARE identifier TABLE
+    [unknown: --> eof]
+end
+
+def valuesIntoStatement =
+    VALUES [unknown: --> eof]
+end
+
 def declareCursorStatement =
     DECLARE cursorName [sensitivity] [scrollability] CURSOR
 
     [holdability]
     [returnability]
+    [positioning]                                    # [IBM DB2 SQL Statements]
 
-    FOR queryExpression [orderBy] [updatability]
+    FOR queryExpression
     
     [unknown: --> eof]
     
@@ -55,11 +83,16 @@ def declareCursorStatement =
   where def scrollability   =  (SCROLL | NO SCROLL)                       end
   where def holdability     =  (WITH HOLD | WITHOUT HOLD)                 end
   where def returnability   =  (WITH RETURN | WITHOUT RETURN)             end
-  where def queryExpression =  unknown                                    end
-  where def orderBy         =  ORDER BY unknown                           end
-  where def updatability    =  FOR ( READ ONLY | UPDATE [ OF unknown ] )  end
+  where def positioning     =  (WITH ROWSET POSITIONING)                  end
 
-  where def unknown =  --> ( ORDER BY | FOR | eof )  end 
+  # A cursor is declared FOR a select-statement. selectStatement owns all of
+  # its trailing clauses (ORDER BY, FETCH FIRST, FOR UPDATE / FOR READ ONLY),
+  # so there is nothing to handle at the cursor level after it.
+  where def queryExpression =
+      ( selectStatement
+      | unknown: --> eof
+      )
+  end
 end
 
 def selectStatement =
@@ -67,8 +100,13 @@ def selectStatement =
     [setQuantifier]
     selectList
     [into]
-    from              [ unknown: --> WHERE ]
-    [`where]          [ unknown: --> eof ]
+    from              [ unknown: --> nextBlockOrEnd ]
+    [`where]          [ unknown: --> nextBlockOrEnd ]
+    [groupBy]         [ unknown: --> nextBlockOrEnd ]
+    [having]          [ unknown: --> nextBlockOrEnd ]
+    [orderBy]         [ unknown: --> nextBlockOrEnd ]
+    [fetchFirst]      [ unknown: --> nextBlockOrEnd ]
+    [updatability]    [ unknown: --> eof ]
 
   where def setQuantifier =  ( distinct: DISTINCT | all: ALL )  end
   
@@ -102,8 +140,33 @@ def selectStatement =
       ) %upto { nextBlockOrEnd }
   end
 
+  where def groupBy =
+      GROUP BY (unknown: --> nextBlockOrEnd)
+  end
+
+  where def having =
+      HAVING (unknown: --> nextBlockOrEnd)
+  end
+
+  where def orderBy =
+      ORDER BY (unknown: --> nextBlockOrEnd)
+  end
+
+  where def fetchFirst =
+      FETCH FIRST (unknown: --> (ROW | ROWS | eof))
+      (ROW | ROWS) ONLY
+  end
+
+  where def updatability =
+      FOR ( READ ONLY
+          | FETCH ONLY                               # [IBM DB2 SQL Statements]
+          | UPDATE [ OF (unknown: --> nextBlockOrEnd) ]
+          )
+  end
+
   where private def nextBlockOrEnd =
-      ( FROM | WHERE | GROUP BY | HAVING | WINDOW | eof )
+      ( FROM | WHERE | GROUP BY | HAVING | ORDER BY | FETCH FIRST | WINDOW
+      | FOR | WITH | eof )
   end 
 end
 
@@ -135,6 +198,11 @@ def deleteStatement =
     [--> eof]
 end
 
+def mergeStatement =
+    MERGE INTO tableName
+    [unknown: --> eof]
+end
+
 def openStatement =
     OPEN cursorName [inputUsing]
     
@@ -154,6 +222,87 @@ def lockTableStatement =
 
     [unknown: --> eof]
 end
+
+
+## ############################################################################
+## Additional DML / Transaction Control / Dynamic SQL Statements
+## ----------------------------------------------------------------------------
+
+def fetchStatement =
+    FETCH [fetchOrientation] cursorName
+    [fetchInto]
+    [fetchUsingDescriptor]
+    [unknown: --> eof]
+
+  where def fetchOrientation =
+      ( NEXT | PRIOR | FIRST | LAST
+      | BEFORE | AFTER
+      | CURRENT
+      )
+  end
+
+  where def fetchInto =
+      INTO (target (',' target)*)
+
+    where private def target =
+      ( hostParameterSpecification
+      | unknown: _+
+      ) %upto { ',' }
+    end
+  end
+
+  where def fetchUsingDescriptor =
+      USING DESCRIPTOR (unknown: --> eof)
+  end
+end
+
+def commitStatement =
+    COMMIT [WORK]
+end
+
+def setStatement =
+    SET [unknown: --> eof]
+end
+
+def getDiagnosticsStatement =
+    GET DIAGNOSTICS [unknown: --> eof]
+end
+
+def prepareStatement =
+    PREPARE identifier
+    [prepareInto]
+    FROM (unknown: --> eof)
+    [unknown: --> eof]
+
+  where def prepareInto =
+      INTO (unknown: --> FROM)
+  end
+end
+
+def executeImmediateStatement =
+    EXECUTE IMMEDIATE (unknown: --> eof)
+end
+
+def executeStatement =
+    EXECUTE identifier
+    [executeUsing]
+    [unknown: --> eof]
+
+  where def executeUsing =
+      USING (unknown: --> eof)
+  end
+end
+
+def describeStatement =
+    DESCRIBE identifier
+    [describeInto]
+    [unknown: --> eof]
+
+  where def describeInto =
+      INTO (unknown: --> eof)
+  end
+end
+
 
 ## ############################################################################
 ## Data Definition Language Statements
@@ -390,13 +539,39 @@ def lessThanOrEqualsOp    =  ( '<' ++ '=' | '!' ++ '>' )  end
 ## Functions
 ## ----------------------------------------------------------------------------
 
-# This is a very incomplete definition, so make sure call sites allow for that. 
 def aggregateFunction =
-    countAll
+    ( countAll
+    | countColumn
+    | generalAggregate
+    )
 end
 
 def countAll =
     COUNT '(' '*' ')'
+end
+
+def countColumn =
+    COUNT '(' [setQuantifier] (unknown: --> ')') ')'
+
+  where def setQuantifier =  ( distinct: DISTINCT | all: ALL )  end
+end
+
+def generalAggregate =
+    aggregateName '(' [setQuantifier] (unknown: --> ')') ')'
+
+  where def aggregateName =
+      ( SUM | AVG | MIN | MAX | MEDIAN
+      | STDDEV | VARIANCE | VAR
+      | CORR | CORRELATION
+      | COVAR | COVARIANCE
+      | LISTAGG | XMLAGG
+      | PERCENTILE_CONT | PERCENTILE_DISC
+      | PERCENT_RANK | CUME_DIST
+      | GROUPING
+      )
+  end
+
+  where def setQuantifier =  ( distinct: DISTINCT | all: ALL )  end
 end
 
 
@@ -426,7 +601,35 @@ def regularIdentifier   =  word  end
 def delimitedIdentifier =  str   end
 
 
-def tableReferenceList =  tableReference (',' tableReference)*  end
+def tableReferenceList =
+    tableReference ( joinOperator tableReference [joinCondition] )*
+
+  # Tables are separated either by a comma (cross join) or by an explicit
+  # join operator. Either way each table surfaces as its own tableReference.
+  where private def joinOperator =
+      ( ','
+      | [ INNER
+        | ( LEFT | RIGHT | FULL ) [ OUTER ]
+        | CROSS
+        ] JOIN
+      )
+  end
+
+  # The ON / USING predicate of a join is skipped as water, bounded before the
+  # next join, the next table-list separator, or the end of the FROM clause.
+  where private def joinCondition =
+      ( ON    (unknown: --> afterJoinCondition)
+      | USING (unknown: --> afterJoinCondition)
+      )
+  end
+
+  where private def afterJoinCondition =
+      ( ','
+      | INNER | LEFT | RIGHT | FULL | CROSS | JOIN
+      | WHERE | GROUP BY | HAVING | ORDER BY | FETCH FIRST | WINDOW
+      | FOR | WITH | eof )
+  end
+end
 
 # Note: this one is a huge oversimplification...
 def tableReference =  tableName  end

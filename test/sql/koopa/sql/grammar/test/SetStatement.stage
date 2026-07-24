@@ -1,0 +1,13 @@
+target setStatement;
+
+# SET host variable to special register
++[ SET ] HostParameter:hostParameterSpecification [ = CURRENT TIMESTAMP ]
+
+# SET host variable to CURRENT DATE
++[ SET ] HostParameter:hostParameterSpecification [ = CURRENT DATE ]
+
+# SET CURRENT SQLID
++[ SET CURRENT SQLID = 'MYSCHEMA' ]
+
+# SET CURRENT SCHEMA
++[ SET CURRENT SCHEMA = 'PRODUCTION' ]

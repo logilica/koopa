@@ -1,0 +1,10 @@
+target prepareStatement;
+
+# Basic PREPARE FROM host variable
++[ PREPARE STMT1 FROM ] HostParameter:hostParameterSpecification
+
+# PREPARE with named statement
++[ PREPARE TRNSEARH FROM ] HostParameter:hostParameterSpecification
+
+# PREPARE INTO SQLDA (Method 4)
++[ PREPARE STMT1 INTO ] HostParameter:hostParameterSpecification [ FROM ] HostParameter:hostParameterSpecification

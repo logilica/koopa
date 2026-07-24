@@ -1,0 +1,7 @@
+target getDiagnosticsStatement;
+
+# Basic GET DIAGNOSTICS — number of conditions
++[ GET DIAGNOSTICS ] HostParameter:hostParameterSpecification [ = NUMBER ]
+
+# GET DIAGNOSTICS — row count
++[ GET DIAGNOSTICS ] HostParameter:hostParameterSpecification [ = ROW_COUNT ]

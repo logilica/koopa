@@ -1,0 +1,13 @@
+target fetchStatement;
+
+# Basic FETCH into host variables
++[ FETCH C1 INTO ] HostParameter:hostParameterSpecification [, ] HostParameter:hostParameterSpecification
+
+# FETCH NEXT (explicit orientation)
++[ FETCH NEXT C1 INTO ] HostParameter:hostParameterSpecification
+
+# FETCH with cursor name only (minimal)
++[ FETCH CURR_CSR INTO ] HostParameter:hostParameterSpecification [, ] HostParameter:hostParameterSpecification [, ] HostParameter:hostParameterSpecification
+
+# FETCH with USING DESCRIPTOR (dynamic SQL Method 4)
++[ FETCH C1 USING DESCRIPTOR ] HostParameter:hostParameterSpecification

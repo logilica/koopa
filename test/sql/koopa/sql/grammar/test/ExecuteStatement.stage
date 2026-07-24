@@ -1,0 +1,13 @@
+target executeStatement;
+
+# Basic EXECUTE of prepared statement
++[ EXECUTE STMT1 ]
+
+# EXECUTE with USING
++[ EXECUTE STMT1 USING ] HostParameter:hostParameterSpecification
+
+# EXECUTE with multiple USING parameters
++[ EXECUTE STMT1 USING ] HostParameter:hostParameterSpecification [, ] HostParameter:hostParameterSpecification
+
+# EXECUTE USING DESCRIPTOR
++[ EXECUTE STMT1 USING DESCRIPTOR ] HostParameter:hostParameterSpecification
