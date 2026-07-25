@@ -1,0 +1,4 @@
+target describeStatement;
+
+# DESCRIBE into SQLDA
++[ DESCRIBE STMT1 INTO ] HostParameter:hostParameterSpecification

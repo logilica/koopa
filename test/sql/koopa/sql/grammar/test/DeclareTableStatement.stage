@@ -1,0 +1,10 @@
+target declareTableStatement;
+
+# Basic DECLARE TABLE (DCLGEN documentation statement)
++[ DECLARE EMPLOYEES TABLE ( EMP_ID CHAR(10) NOT NULL ) ]
+
+# Minimal
++[ DECLARE T_REGION TABLE ]
+
+# Should reject: SESSION-qualified (that's declareSessionStatement)
+-[ DECLARE SESSION . FOO TABLE ]

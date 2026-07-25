@@ -1,0 +1,13 @@
+target declareGlobalTempTableStatement;
+
+# Basic DECLARE GLOBAL TEMPORARY TABLE
++[ DECLARE GLOBAL TEMPORARY TABLE TMP_RESULTS ( COL1 CHAR(10) NOT NULL ) ]
+
+# Without column definitions (just table name)
++[ DECLARE GLOBAL TEMPORARY TABLE TEMP_TRN ]
+
+# Should reject: missing GLOBAL TEMPORARY keywords
+-[ DECLARE TABLE FOO ]
+
+# Should reject: plain DECLARE without TABLE context
+-[ DECLARE FOO ]
